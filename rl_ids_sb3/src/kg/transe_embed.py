@@ -8,7 +8,7 @@ def _fallback_random_entity_embeddings(entities, dim: int, seed: int = 0) -> Dic
 
 def train_transe_with_pykeen(triples_df, dim: int = 16, epochs: int = 20, seed: int = 0) -> Tuple[Dict[str, np.ndarray], Dict[str, int]]:
     """
-    用 PyKEEN 训练 TransE（少量 epoch，毕业设计演示够用）。
+    用 PyKEEN 训练 TransE（少量 epoch，课程作业演示够用）。
     兼容：PyKEEN 某些版本要求 pipeline() 必须同时给 training + testing
     """
     try:
