@@ -1,0 +1,60 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# 虚拟环境
+.venv/
+venv/
+
+# 大型数据文件
+*.zip
+test.zip
+rl_ids_sb3.zip
+
+# 模型文件
+models/*.zip
+models/*.joblib
+models/*.pkl
+experiments/*.zip
+experiments/*.pkl
+experiments/benign_sc/
+runs/
+
+# IDE
+.vscode/
+.idea/
+
+# 系统文件
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Office 临时文件
+~$*
+
+# 本地构建、缓存和临时分析文件
+.ppt_build/
+_tmp*.py
+_tmp*.json
+_gen_*.py
+*.log
+
+# 本地数据重建产物和训练输出（源代码仍会保留）
+rebuild_data/raw/
+rebuild_data/kg/
+rebuild_data/processed/
+rl_ids_sb3/runs/
+stable_baseline3_DQNTD3/runs/
+
+# 嵌套环境/外部源码
+**/.venv/
+stable_baseline3_DQNTD3/vendor/
+
+# 个人课程材料与 Office 文档
+*.doc
+*.docx
+*.ppt
+*.pptx
+*.pdf
+
