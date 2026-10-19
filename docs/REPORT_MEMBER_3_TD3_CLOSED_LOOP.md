@@ -1,105 +1,93 @@
-# 成员 3 独立完成报告：TD3 连续响应与闭环评估
+# 成员 3 独立完成报告：TD3-BC 离线预训练与闭环控制
 
 ## 1. 报告定位
 
-本报告负责将攻击响应建模为连续动作强化学习问题，并把 DQN 检测输出接入 TD3，评估完整的检测与响应闭环。
+本报告围绕离线强化学习和 TD3-BC 展开。成员 3 负责从专家或 LLM buffer 中学习初始策略，再进行在线微调，并把检测策略与响应策略连接成完整闭环。
 
-## 2. 需要回答的问题
+## 2. 核心问题
 
-- TD3 的状态、动作和奖励如何定义？
-- 阈值变化与响应强度分别代表什么？
-- 响应强度增加是否同时带来更高的响应成本？
-- TD3-BC 预训练和在线微调是否稳定？
-- DQN+TD3 闭环能否降低漏报或提高攻击缓解率？
+- 离线行为数据能否提供比随机初始化更好的 TD3 起点？
+- BC 预训练、TD3-BC 和在线微调的差异是什么？
+- 微调后奖励上升时，FN Cost 是否可能恶化？
+- DQN 门控与 TD3 响应连接后，闭环成功率和攻击缓解率如何变化？
 
-## 3. 实验范围
+## 3. 负责代码
 
-代码范围：
-
-- `rl_ids_sb3/src/envs/response_env.py`
-- `rl_ids_sb3/src/train/train_td3.py`
-- `rl_ids_sb3/src/train/train_td3_binary.py`
-- `rl_ids_sb3/src/offline/`
-- `rl_ids_sb3/src/eval/eval_td3_response.py`
+- `rl_ids_sb3/src/offline/gen_expert_buffer.py`
+- `rl_ids_sb3/src/offline/gen_llm_buffer.py`
+- `rl_ids_sb3/src/offline/pretrain_td3_bc.py`
+- `rl_ids_sb3/src/offline/finetune_td3_binary.py`
+- `rl_ids_sb3/src/offline/finetune_td3_fix_v1.py`
+- `rl_ids_sb3/src/offline/finetune_td3_fix_v2.py`
+- `rl_ids_sb3/src/policy/`
 - `rl_ids_sb3/src/eval/eval_closed_loop.py`
 
-成员 2 提供 DQN 模型路径和检测输出格式。
+## 4. 报告内容
 
-## 4. 报告章节
+### 4.1 离线数据与策略初始化
 
-### 4.1 响应 MDP
+说明：
 
-| 要素 | 本项目定义 |
-|---|---|
-| 状态 | 数值特征、KG 特征及响应环境输入 |
-| 动作 | `[delta_threshold, response_intensity]` |
-| 动作范围 | 通常为 [-1, 1] |
-| 正常样本目标 | 控制过度响应和响应成本 |
-| 攻击样本目标 | 提高响应强度并降低漏报代价 |
-| 终止 | 单样本响应完成或环境规定的终止条件 |
+- buffer 来源；
+- 状态、动作、奖励和标签的键；
+- 专家动作如何生成；
+- buffer 样本数量和类别分布；
+- BC 损失或 TD3-BC 目标；
+- 预训练模型如何接入 TD3 在线训练。
 
-说明环境中的成本项、正常样本奖励和攻击样本奖励如何共同构成总奖励。
+### 4.2 实验对照
 
-### 4.2 TD3 配置
+至少比较以下方案：
 
-| 参数 | 原始 TD3 | TD3-BC/微调 |
-|---|---:|---:|
-| 总训练步数 | 待填写 | 待填写 |
-| 学习率 | 待填写 | 待填写 |
-| Batch size | 待填写 | 待填写 |
-| Replay buffer | 待填写 | 待填写 |
-| Action noise | 待填写 | 待填写 |
-| Attack reward weight | 待填写 | 待填写 |
-| Cost coefficient | 待填写 | 待填写 |
+| 方案 | 初始化 | 是否在线微调 | Avg Reward | FN Cost | Total Cost |
+|---|---|---|---:|---:|---:|
+| 原始 TD3 | 随机 | 是 | 待填写 | 待填写 | 待填写 |
+| TD3-BC pretrain | 离线 BC/TD3-BC | 否或短微调 | 待填写 | 待填写 | 待填写 |
+| TD3-BC finetune | 离线预训练 | 是 | 待填写 | 待填写 | 待填写 |
+| TD3-BC fix v1/v2 | 离线预训练 | 是 | 待填写 | 待填写 | 待填写 |
 
-### 4.3 响应结果
+解释不同方案的训练目标和评估目标是否一致。
 
-| 模型 | Avg Reward | Avg Intensity | Attack Intensity | FP Cost | FN Cost | Total Cost |
-|---|---:|---:|---:|---:|---:|---:|
-| TD3 | 待填写 | 待填写 | 待填写 | 待填写 | 待填写 | 待填写 |
-| TD3-BC pretrain | 待填写 | 待填写 | 待填写 | 待填写 | 待填写 | 待填写 |
-| TD3-BC finetune | 待填写 | 待填写 | 待填写 | 待填写 | 待填写 | 待填写 |
-
-解释奖励较高但 FN Cost 仍较高的情况，避免只依据单一指标判断模型优劣。
-
-### 4.4 闭环评估
+### 4.3 闭环评估
 
 ```powershell
 cd rl_ids_sb3
-python -m src.eval.eval_closed_loop --dqn runs/member2_dqn/dqn_detect_binary.zip --td3 runs/member3_td3/td3_resp_binary.zip --data data/processed/test_binary.npz --out runs/member3_td3/closed_loop.json
+python -m src.eval.eval_closed_loop --dqn runs/member1_dqn/dqn_detect_binary.zip --td3 runs/member3_td3_bc/td3_bc.zip --data data/processed/test_binary.npz --out runs/member3_td3_bc/closed_loop.json
 ```
 
 填写：
 
-| 指标 | DQN 单独 | DQN+TD3 闭环 |
-|---|---:|---:|
-| Detection Accuracy | 待填写 | 待填写 |
-| Attack Recall | 待填写 | 待填写 |
-| Response Trigger Rate | 不适用 | 待填写 |
-| Attack Mitigation Rate | 不适用 | 待填写 |
-| Missed Attack Rate | 待填写 | 待填写 |
-| Total Cost | 不适用 | 待填写 |
-| Closed-loop Success Rate | 不适用 | 待填写 |
+| 指标 | DQN 检测 | DQN + 原始 TD3 | DQN + TD3-BC |
+|---|---:|---:|---:|
+| Detection Accuracy | 待填写 | 待填写 | 待填写 |
+| Attack Recall | 待填写 | 待填写 | 待填写 |
+| Response Trigger Rate | 不适用 | 待填写 | 待填写 |
+| Attack Mitigation Rate | 不适用 | 待填写 | 待填写 |
+| Missed Attack Rate | 待填写 | 待填写 | 待填写 |
+| Total Cost | 不适用 | 待填写 | 待填写 |
+| Closed-loop Success Rate | 不适用 | 待填写 | 待填写 |
 
-### 4.5 错误与稳定性分析
+### 4.4 稳定性和失败分析
 
-至少讨论：
+至少分析：
 
-- 检测漏报导致响应未触发的情况。
-- 正常样本被触发响应的情况。
-- 响应强度过低或过高的情况。
-- 奖励函数与最终评估成本不一致的情况。
-- 不同随机种子或训练步数下的变化。
+- buffer 动作质量不足；
+- 预训练策略过度模仿单一行为；
+- 在线微调造成策略退化；
+- 平均奖励与 FN Cost 方向不一致；
+- 检测漏报导致响应无法触发；
+- 正常样本被错误触发响应。
 
 ## 5. 个人结论
 
-结论应明确回答：TD3 学到的动作是否有实际区分度、响应成本是否可接受、闭环是否改善关键指标、TD3-BC 是否值得保留，以及下一步应优先调整奖励函数还是训练流程。
+结论必须明确说明 TD3-BC 是否改善初始化、哪种方案最稳定、闭环是否优于单独检测，以及奖励函数和离线数据还需要怎样改进。
 
 ## 6. 个人交付物
 
-- 本报告。
-- TD3 模型路径或生成说明。
-- 响应评估 JSON。
-- 闭环评估 JSON。
-- 成本分解表和响应强度图。
-- 运行命令、配置副本和日志摘要。
+- buffer 生成或检查记录；
+- TD3-BC 预训练模型；
+- 微调模型；
+- 原始 TD3/TD3-BC/微调对照表；
+- 闭环评估 JSON；
+- 成本和成功率图表；
+- 本独立报告。
