@@ -5,7 +5,7 @@ import pandas as pd
 def build_demo_triples(y: np.ndarray):
     """
     粗浅示例：用标签 y 构造一个“攻击手段-漏洞-资产-路径”的小图谱。
-    真实毕业设计里，你可以把 attack_type 映射到：
+    在扩展作业中，你可以把 attack_type 映射到：
       - technique（攻击手段）
       - vuln（漏洞）
       - asset（目标资产）
