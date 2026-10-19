@@ -201,6 +201,10 @@ uvicorn src.services.inference_service:app --host 127.0.0.1 --port 8000
 - [`docs/KEY_RESULTS_VERIFIED.md`](docs/KEY_RESULTS_VERIFIED.md)：复核指标
 - [`rebuild_data/README.md`](rebuild_data/README.md)：独立重建说明
 - [`rl_ids_sb3/README.md`](rl_ids_sb3/README.md)：主线模块说明
+- [`docs/GROUP_ASSIGNMENT_PLAN.md`](docs/GROUP_ASSIGNMENT_PLAN.md)：三人小组作业分工与协作规范
+- [`docs/REPORT_MEMBER_1_DATA_KG.md`](docs/REPORT_MEMBER_1_DATA_KG.md)：成员 1 独立报告模板
+- [`docs/REPORT_MEMBER_2_DQN.md`](docs/REPORT_MEMBER_2_DQN.md)：成员 2 独立报告模板
+- [`docs/REPORT_MEMBER_3_TD3_CLOSED_LOOP.md`](docs/REPORT_MEMBER_3_TD3_CLOSED_LOOP.md)：成员 3 独立报告模板
 
 ## 许可证
 
