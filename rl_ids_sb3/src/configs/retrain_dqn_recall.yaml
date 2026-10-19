@@ -1,0 +1,41 @@
+seed: 42
+k_classes: 2
+
+kg:
+  dim: 32
+  use_pykeen: false
+  epochs: 20
+
+reward:
+  w_det: 1.0
+  w_resp: 0.2
+
+dqn:
+  learning_rate: 5.0e-4
+  buffer_size: 100000
+  learning_starts: 2000
+  batch_size: 256
+  gamma: 0.99
+  train_freq: 4
+  target_update_interval: 2000
+  exploration_fraction: 0.35
+  exploration_final_eps: 0.10
+
+td3:
+  learning_rate: 1.0e-3
+  buffer_size: 50000
+  learning_starts: 1000
+  batch_size: 256
+  gamma: 0.99
+  tau: 0.005
+  train_freq: 1
+  policy_delay: 2
+  action_noise_sigma: 0.1
+
+train:
+  dqn_steps: 100000
+  td3_steps: 20000
+
+eval:
+  n_eval_episodes: 10
+
