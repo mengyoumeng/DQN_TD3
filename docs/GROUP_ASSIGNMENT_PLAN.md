@@ -1,181 +1,199 @@
-# 强化学习小组作业：三人分工与协作框架
+# 强化学习小组作业：三人 RL 主线分工框架
 
-## 1. 作业目标
+## 1. 分工原则
 
-本作业围绕网络流量攻击检测与响应流程展开。小组共同完成一条可运行的实验链路：
+本作业由三名成员分别负责三个高度独立的强化学习实验包。每个人都有自己的环境、训练入口、算法问题、评价指标和独立报告；三人的结果最后通过统一测试集和闭环流程连接起来。
 
-`原始流量 → 数据清洗与知识图谱特征 → DQN 离散检测 → TD3 连续响应 → 闭环评估`
+整体链路为：
 
-三名成员分别负责一个可独立复现的实验包。每名成员提交一份独立报告，报告应能在不依赖其他成员叙述的情况下说明自己的问题、方法、代码、实验和结论。最终小组材料再将三份报告按系统流程合并。
+`公共数据状态 → 成员 1：DQN 检测 → 成员 2：TD3 连续响应 → 成员 3：TD3-BC 离线预训练/微调 + 闭环评估`
 
-## 2. 总体分工
+数据清洗、KG/TransE 特征只作为公共输入准备，控制在每个人报告的“实验设置”章节中，不作为任何一个人的主要工作量。
 
-| 成员 | 独立主题 | 主要问题 | 主要目录 | 核心输出 |
-|---|---|---|---|---|
-| 成员 1 | 数据处理与知识图谱特征 | 如何在避免标签实体的前提下构建可供强化学习使用的状态特征？ | `test/`、`rebuild_data/`、`rl_ids_sb3/src/kg/`、`rl_ids_sb3/src/data/` | 清洗规则、KG 三元组、32 维 TransE、训练/测试 NPZ、数据质量报告 |
-| 成员 2 | DQN 离散攻击检测 | DQN 能否根据数值特征与 KG 特征区分正常流量和攻击流量？ | `rl_ids_sb3/src/envs/detection_env.py`、`src/train/train_dqn.py`、`src/eval/evaluate.py` | DQN 模型、检测指标、混淆矩阵、基线对比、误报漏报分析 |
-| 成员 3 | TD3 连续响应与闭环评估 | TD3 能否在检测结果基础上学习响应强度与阈值调整，并控制响应代价？ | `rl_ids_sb3/src/envs/response_env.py`、`src/train/train_td3*.py`、`src/eval/eval_td3_response.py`、`src/eval/eval_closed_loop.py` | TD3 模型、响应指标、成本分析、DQN+TD3 闭环结果、服务演示 |
+## 2. 三人职责总览
 
-## 3. 共享实验协议
+| 成员 | RL 主题 | 核心研究问题 | 主要算法 | 主要代码范围 | 独立核心产物 |
+|---|---|---|---|---|---|
+| 成员 1 | DQN 离散检测 | 离散动作强化学习能否完成攻击类别识别？ | DQN | `src/envs/detection_env.py`、`src/train/train_dqn.py`、`src/eval/evaluate.py` | DQN 模型、检测指标、奖励曲线、误报/漏报分析 |
+| 成员 2 | TD3 连续响应 | 连续动作强化学习能否学习响应强度和阈值调整？ | TD3 | `src/envs/response_env.py`、`src/train/train_td3.py`、`src/train/train_td3_binary.py`、`src/eval/eval_td3_response.py` | TD3 模型、响应强度分布、奖励和成本分析 |
+| 成员 3 | TD3-BC 与闭环控制 | 离线行为克隆预训练能否改善 TD3 初始化，并在闭环中降低漏报或响应成本？ | TD3-BC、离线 RL、在线微调 | `src/offline/`、`src/policy/`、`src/eval/eval_closed_loop.py` | 专家/LLM buffer、预训练模型、微调模型、闭环评估 |
 
-为保证三份报告可以比较，三名成员统一使用以下设置：
+## 3. 统一实验条件
 
-- 数据：同一版二分类数据，标签统一为 0=Benign、1=Attack。
-- 特征：数值特征和不含标签实体的 KG/TransE 特征；不得把标签或标签派生字段放入输入。
-- 划分：固定使用项目提供的训练集和测试集，不在测试集上调参。
-- 随机种子：默认 `seed=0`。如需额外种子，至少记录 0、1、2 三次结果和均值/标准差。
-- 记录：保存命令、配置文件、运行时间、样本数量、特征维度、模型路径和指标 JSON。
-- 结果：所有表格注明数据文件、训练步数、随机种子和评估脚本。
-- 结论：只解释实际运行得到的结果，不把预期指标写成实验结果。
+三人必须共享以下条件：
 
-## 4. 成员 1：数据与 KG 特征
+- 使用相同的训练集、测试集和标签编码：0=Benign，1=Attack。
+- 使用同一套数值特征与不含标签实体的 KG/TransE 特征。
+- 默认随机种子为 0；如果比较稳定性，统一使用 0、1、2。
+- 测试集只用于最终评估，不能用来选择超参数。
+- 每次实验记录配置、训练步数、模型路径、日志和 JSON 指标。
+- 报告中的数字必须能在结果 JSON、日志或图表中找到来源。
+- 三人可以复用公共数据准备脚本，但每个人必须独立完成自己的 RL 训练和分析。
 
-### 研究任务
-
-1. 说明原始 CSV 的字段、标签分布和数据清洗规则。
-2. 移除标签、时间戳、IP 等不应直接进入模型的字段。
-3. 仅使用端口和协议构建无标签 KG，训练 32 维 TransE。
-4. 生成 `X_num`、`X_kg`、`y`，检查形状、有限值、类别和重复情况。
-5. 设计一个特征对照：仅数值特征 vs 数值特征+KG 特征。
-
-### 运行范围
-
-- `test/kg_make_triples_nolabel.py`
-- `test/kg_train_transe_nolabel.py`
-- `test/make_cic_transe_npz_split_nolabel.py`
-- `rebuild_data/kg_make.py`
-- `rebuild_data/kg_train.py`
-- `rebuild_data/make_npz.py`
-- `rl_ids_sb3/src/data/io.py`
-- `rl_ids_sb3/src/kg/`
-
-### 必交结果
-
-- 数据处理流程图。
-- 清洗前后样本数、类别数、标签分布表。
-- KG 实体/关系数量和示例三元组。
-- 数值特征维度、KG 维度、拼接后维度。
-- 数据质量检查表：NaN、Inf、空值、未知实体。
-- 两种特征输入的对照结果或可复现实验命令。
-
-## 5. 成员 2：DQN 检测
+## 4. 成员 1：DQN 离散检测
 
 ### 研究任务
 
-1. 将检测任务建模为离散动作强化学习问题。
-2. 说明状态、动作、奖励、终止条件和采样方式。
+1. 将攻击检测定义为离散动作 MDP。
+2. 分析状态向量、动作类别、奖励函数、采样模式和终止条件。
 3. 训练 DQN 二分类检测器。
-4. 与 LR、HGB、ExtraTrees 等基线比较。
-5. 分析准确率、macro Precision、macro Recall、macro F1、AUC、攻击类召回率和混淆矩阵。
-6. 重点分析误报和漏报，不只报告 Accuracy。
+4. 研究训练步数、探索率、奖励设置或均衡采样对检测效果的影响。
+5. 与 LR、HGB、ExtraTrees 做辅助对照，但报告重点放在 DQN。
+6. 分析攻击类 Recall、漏报和误报。
 
-### 运行范围
+### 代码与命令
 
-- `rl_ids_sb3/src/envs/detection_env.py`
-- `rl_ids_sb3/src/train/train_dqn.py`
-- `rl_ids_sb3/src/train/train_all.py`
-- `rl_ids_sb3/src/eval/evaluate.py`
-- `rebuild_data/run_baselines.py`
-
-### 推荐命令
+- 环境：`rl_ids_sb3/src/envs/detection_env.py`
+- 训练：`rl_ids_sb3/src/train/train_dqn.py`
+- 入口：`rl_ids_sb3/src/train/train_all.py`
+- 评估：`rl_ids_sb3/src/eval/evaluate.py`
 
 ```powershell
 cd rl_ids_sb3
-python -m src.train.train_all --data_dir data/processed --train_file train_binary.npz --test_file test_binary.npz --out_dir runs/member2_dqn
-python -m src.eval.evaluate --model runs/member2_dqn/dqn_detect_binary.zip --data data/processed/test_binary.npz --out runs/member2_dqn/metrics.json
+python -m src.train.train_all --data_dir data/processed --train_file train_binary.npz --test_file test_binary.npz --out_dir runs/member1_dqn
 ```
 
-### 必交结果
+### 必须回答
 
-- DQN 环境定义和训练流程图。
-- DQN 超参数表。
-- DQN 与三个监督学习基线的统一测试集对比表。
-- 混淆矩阵和至少一张训练曲线或指标图。
-- 误报样本与漏报样本的原因分析。
-- 对状态特征、奖励和采样策略的局限性说明。
+- DQN 的奖励是否与攻击检测目标一致？
+- Accuracy 较高时，攻击类 Recall 是否也足够高？
+- 均衡采样是否改变了误报/漏报比例？
+- DQN 相对监督学习基线的主要优势和不足是什么？
 
-## 6. 成员 3：TD3 响应与闭环
+## 5. 成员 2：TD3 连续响应
 
 ### 研究任务
 
-1. 将响应任务建模为连续动作强化学习问题。
-2. 说明 TD3 状态、动作、奖励和响应成本。
-3. 训练 TD3，输出阈值变化和响应强度。
-4. 比较原始 TD3、TD3-BC 预训练和微调方案（若对应脚本可运行）。
-5. 使用 DQN 输出作为检测门控，完成闭环评估。
-6. 分析平均奖励、响应强度、FP/FN 成本、总成本、攻击缓解率和闭环成功率。
+1. 将响应策略定义为连续动作 MDP。
+2. 解释 `delta_threshold` 和 `response_intensity` 的含义。
+3. 训练原始 TD3 响应模型。
+4. 研究 `attack_reward_weight`、`cost_coefficient`、动作噪声和训练步数的影响。
+5. 分析正常样本过度响应、攻击样本响应不足和奖励成本之间的关系。
+6. 完成原始 TD3 的独立报告，不依赖成员 3 的离线预训练结果。
 
-### 运行范围
+### 代码与命令
 
-- `rl_ids_sb3/src/envs/response_env.py`
-- `rl_ids_sb3/src/train/train_td3.py`
-- `rl_ids_sb3/src/train/train_td3_binary.py`
-- `rl_ids_sb3/src/offline/`
-- `rl_ids_sb3/src/eval/eval_td3_response.py`
-- `rl_ids_sb3/src/eval/eval_closed_loop.py`
-
-### 推荐命令
+- 环境：`rl_ids_sb3/src/envs/response_env.py`
+- 训练：`rl_ids_sb3/src/train/train_td3.py`、`train_td3_binary.py`
+- 评估：`rl_ids_sb3/src/eval/eval_td3_response.py`
 
 ```powershell
 cd rl_ids_sb3
-python -m src.train.train_td3_binary --data_dir data/processed --train_file train_binary.npz --out_dir runs/member3_td3
-python -m src.eval.eval_td3_response --model runs/member3_td3/td3_resp_binary.zip --data data/processed/test_binary.npz --out runs/member3_td3/metrics.json
-python -m src.eval.eval_closed_loop --dqn runs/member2_dqn/dqn_detect_binary.zip --td3 runs/member3_td3/td3_resp_binary.zip --data data/processed/test_binary.npz --out runs/member3_td3/closed_loop.json
+python -m src.train.train_td3_binary --data_dir data/processed --train_file train_binary.npz --out_dir runs/member2_td3
+python -m src.eval.eval_td3_response --model runs/member2_td3/td3_resp_binary.zip --data data/processed/test_binary.npz --out runs/member2_td3/metrics.json
 ```
 
-### 必交结果
+### 必须回答
 
-- TD3 环境和奖励函数说明。
-- TD3 超参数表及动作范围。
-- 原始 TD3 与 TD3-BC 结果对比。
-- 响应强度分布、成本分解和攻击/正常样本对比。
-- DQN 单独检测与 DQN+TD3 闭环结果对比。
-- 对漏检、过度响应和奖励函数错配的分析。
+- TD3 是否学到不同类别的响应强度？
+- 平均奖励提高是否一定代表 FN Cost 降低？
+- 响应成本和攻击缓解率之间如何权衡？
+- 哪个奖励参数最影响策略行为？
 
-## 7. 三份独立报告的统一结构
+## 6. 成员 3：TD3-BC 离线预训练、微调与闭环
 
-每个人的报告单独保存为一个 Markdown 或文档文件，建议包含：
+### 研究任务
 
-1. 作业题目与个人负责范围。
-2. 个人研究问题和评价指标。
-3. 数据、环境和实验设置。
-4. 方法原理与关键代码位置。
-5. 实验过程和可复现命令。
-6. 结果表格、图表和误差分析。
-7. 局限性与改进建议。
-8. 个人完成内容、提交文件和运行记录。
-9. 附录：配置、日志摘要和关键 JSON 结果。
+1. 说明离线 RL、行为克隆和 TD3-BC 的关系。
+2. 生成或检查专家 buffer、LLM buffer 和混合 buffer。
+3. 完成 TD3-BC 预训练，得到可用于在线 TD3 的初始策略。
+4. 比较随机初始化 TD3、BC 预训练和在线微调。
+5. 分析微调后奖励、FN Cost 和总成本是否同步变化。
+6. 使用成员 1 的 DQN 和成员 2/3 的 TD3 模型完成闭环评估。
+7. 解释检测门控、响应触发、攻击缓解和漏报之间的关系。
 
-每份报告至少包含一张流程图、一张核心结果表和一段失败或限制分析。三份报告共享数据说明，但方法、实验结果和结论必须分别书写。
+### 代码与命令
 
-## 8. 协作接口
+- buffer：`rl_ids_sb3/src/offline/gen_expert_buffer.py`、`gen_llm_buffer.py`
+- 预训练：`rl_ids_sb3/src/offline/pretrain_td3_bc.py`
+- 微调：`finetune_td3_binary.py`、`finetune_td3_fix_v1.py`、`finetune_td3_fix_v2.py`
+- 策略：`rl_ids_sb3/src/policy/`
+- 闭环：`rl_ids_sb3/src/eval/eval_closed_loop.py`
 
-成员 1 向成员 2、3 提供：
+```powershell
+cd rl_ids_sb3
+python -m src.offline.pretrain_td3_bc --data_dir data/processed --out_dir runs/member3_td3_bc
+python -m src.eval.eval_closed_loop --dqn runs/member1_dqn/dqn_detect_binary.zip --td3 runs/member3_td3_bc/td3_bc.zip --data data/processed/test_binary.npz --out runs/member3_td3_bc/closed_loop.json
+```
 
-- 训练/测试 NPZ 路径。
-- 特征键名和形状。
-- 标签编码和类别分布。
-- 数据版本说明和质量检查结果。
+实际参数以脚本的 `--help` 和配置文件为准。若某个 buffer 不存在，应在报告中记录生成方式和样本数量。
 
-成员 2 向成员 3 提供：
+### 必须回答
 
-- DQN 模型路径。
-- 检测预测格式。
-- 检测阈值或门控规则。
-- 测试集检测指标和混淆矩阵。
+- BC 预训练是否让 TD3 更快或更稳定？
+- 离线数据的动作质量如何影响策略？
+- 在线微调是否出现奖励上升但 FN Cost 恶化？
+- 闭环指标是否比单独检测或单独响应更能反映系统效果？
 
-成员 3 向全组提供：
+## 7. 三份独立报告的写作边界
 
-- TD3 模型路径。
-- 响应动作含义和范围。
-- 响应及闭环 JSON。
-- 成本与成功率分析。
+### 成员 1 报告
 
-## 9. 最终验收清单
+题目建议：**基于 DQN 的网络流量离散攻击检测实验**
 
-- 三份报告都能独立说明本人的任务和结果。
-- 三个人使用同一数据版本和测试集。
-- 所有结果都有运行命令和配置来源。
-- 代码路径、模型路径和结果文件可以互相对应。
-- README 中的总流程与三份个人报告一致。
-- 报告中的数字可以在 JSON、日志或图表中找到来源。
+报告重点：
+
+- DQN 环境和奖励；
+- 探索与采样；
+- 训练曲线；
+- 检测指标；
+- 误报/漏报；
+- DQN 与基线对照。
+
+### 成员 2 报告
+
+题目建议：**基于 TD3 的网络流量连续响应控制实验**
+
+报告重点：
+
+- 连续动作环境；
+- 响应奖励和成本；
+- TD3 超参数；
+- 响应强度分布；
+- 正常/攻击样本策略差异；
+- 成本权衡。
+
+### 成员 3 报告
+
+题目建议：**TD3-BC 离线预训练及检测响应闭环实验**
+
+报告重点：
+
+- buffer 和离线数据；
+- BC/TD3-BC 目标；
+- 预训练、微调和随机初始化对比；
+- DQN 门控与 TD3 响应；
+- 闭环成功率、攻击缓解率、漏报率和总成本。
+
+三份报告都应包含：摘要、问题定义、环境设计、算法原理、实验设置、结果、失败分析、局限性和个人完成内容。
+
+## 8. 交接接口
+
+成员 1 提供：
+
+- DQN 模型路径；
+- 预测标签格式；
+- 检测指标和混淆矩阵；
+- 测试集版本。
+
+成员 2 提供：
+
+- 原始 TD3 模型路径；
+- 动作维度和范围；
+- 响应指标与成本分解；
+- 可供成员 3 对比的基线策略。
+
+成员 3 提供：
+
+- buffer 统计；
+- TD3-BC 预训练模型和微调模型；
+- 闭环 JSON；
+- 原始 TD3、BC 预训练和微调的统一比较表。
+
+## 9. 最终检查
+
+- 三人的主要代码都直接涉及 RL 环境、策略、训练或评估。
+- 每个人都有独立模型或独立 RL 实验结果。
+- 三份报告使用同一测试集，但研究问题互不重复。
+- 成员 3 的离线预训练结果能与成员 2 的原始 TD3 对齐比较。
+- 最终闭环只作为成员 3 的综合实验，不改变成员 1、2 的独立结论。
