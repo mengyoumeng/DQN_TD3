@@ -1,0 +1,156 @@
+{
+  "dataset": {
+    "path": "test/data/processed/cic_test_transe_nolabel.npz",
+    "n_samples": 39998,
+    "n_benign": 28793,
+    "n_attack": 11205,
+    "feature_dims": {
+      "x_num": 78,
+      "x_kg": 32,
+      "x_total": 110
+    }
+  },
+  "detection": {
+    "LR": {
+      "accuracy": 0.7061,
+      "precision_macro": 0.6217,
+      "recall_macro": 0.6046,
+      "f1_macro": 0.6099,
+      "confusion_matrix": [
+        [
+          24053,
+          4740
+        ],
+        [
+          7016,
+          4189
+        ]
+      ],
+      "auc": 0.6413
+    },
+    "HGB": {
+      "accuracy": 0.7028,
+      "precision_macro": 0.6451,
+      "recall_macro": 0.6594,
+      "f1_macro": 0.6499,
+      "confusion_matrix": [
+        [
+          21827,
+          6966
+        ],
+        [
+          4922,
+          6283
+        ]
+      ],
+      "auc": 0.7387
+    },
+    "ExtraTrees": {
+      "accuracy": 0.7128,
+      "precision_macro": 0.6389,
+      "recall_macro": 0.632,
+      "f1_macro": 0.635,
+      "confusion_matrix": [
+        [
+          23487,
+          5306
+        ],
+        [
+          6183,
+          5022
+        ]
+      ],
+      "auc": 0.6742
+    },
+    "DQN(binary)": {
+      "accuracy": 0.7772,
+      "precision_macro": 0.8127,
+      "recall_macro": 0.6152,
+      "f1_macro": 0.6235,
+      "auc": 0.6721,
+      "n_samples": 39998
+    }
+  },
+  "response": {
+    "TD3(binary)": {
+      "avg_reward": 0.6919,
+      "avg_intensity": -0.2523,
+      "avg_cost": 0.0742,
+      "avg_benign_intensity": -0.3311,
+      "avg_attack_intensity": -0.0498,
+      "avg_benign_reward": 0.9108,
+      "avg_attack_reward": 0.1297,
+      "fp_cost": 0.0107,
+      "fn_cost": 0.7928,
+      "total_cost": 0.8034,
+      "intensity_distribution": {
+        "low": 37302,
+        "medium": 109,
+        "high": 2587
+      },
+      "n_samples": 39998,
+      "n_benign": 28793,
+      "n_attack": 11205
+    },
+    "TD3 BC pretrain": {
+      "avg_reward": 0.7226,
+      "avg_intensity": 0.0613,
+      "avg_cost": 0.0125,
+      "avg_benign_intensity": 0.0265,
+      "avg_attack_intensity": 0.1506,
+      "avg_benign_reward": 0.9521,
+      "avg_attack_reward": 0.1327,
+      "fp_cost": 0.0055,
+      "fn_cost": 0.8324,
+      "total_cost": 0.8379,
+      "intensity_distribution": {
+        "low": 36792,
+        "medium": 3197,
+        "high": 9
+      },
+      "n_samples": 39998,
+      "n_benign": 28793,
+      "n_attack": 11205
+    },
+    "TD3 BC finetune": {
+      "avg_reward": 0.6795,
+      "avg_intensity": -0.4179,
+      "avg_cost": 0.0838,
+      "avg_benign_intensity": -0.5067,
+      "avg_attack_intensity": -0.1899,
+      "avg_benign_reward": 0.8964,
+      "avg_attack_reward": 0.1221,
+      "fp_cost": 0.0144,
+      "fn_cost": 0.7994,
+      "total_cost": 0.8138,
+      "intensity_distribution": {
+        "low": 37233,
+        "medium": 127,
+        "high": 2638
+      },
+      "n_samples": 39998,
+      "n_benign": 28793,
+      "n_attack": 11205
+    },
+    "TD3 BC finetune v2": {
+      "avg_reward": 0.7235,
+      "avg_intensity": 0.002,
+      "avg_cost": 0.0124,
+      "avg_benign_intensity": -0.0248,
+      "avg_attack_intensity": 0.0708,
+      "avg_benign_reward": 0.9762,
+      "avg_attack_reward": 0.0742,
+      "fp_cost": 0.0002,
+      "fn_cost": 0.9974,
+      "total_cost": 0.9977,
+      "intensity_distribution": {
+        "low": 37873,
+        "medium": 2122,
+        "high": 3
+      },
+      "n_samples": 39998,
+      "n_benign": 28793,
+      "n_attack": 11205
+    }
+  }
+}
