@@ -1,0 +1,35 @@
+seed: 0
+k_classes: 2  # 二分类
+kg:
+  dim: 32  # 与 Baseline 一致
+  use_pykeen: false  # 使用已有的 KG 嵌入
+  epochs: 20
+reward:
+  w_det: 1.0
+  w_resp: 0.2
+dqn:
+  learning_rate: 1.0e-3
+  buffer_size: 50000
+  learning_starts: 1000
+  batch_size: 128
+  gamma: 0.99
+  train_freq: 4
+  target_update_interval: 1000
+  exploration_fraction: 0.2
+  exploration_final_eps: 0.05
+td3:
+  learning_rate: 1.0e-3
+  buffer_size: 50000
+  learning_starts: 1000
+  batch_size: 256
+  gamma: 0.99
+  tau: 0.005
+  train_freq: 1
+  policy_delay: 2
+  action_noise_sigma: 0.1
+train:
+  dqn_steps: 50000  # 增加训练步数
+  td3_steps: 20000
+eval:
+  n_eval_episodes: 10
+
